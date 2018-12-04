@@ -1,0 +1,28 @@
+[build-system]
+requires = ["flit"]
+build-backend = "flit.buildapi"
+
+[tool.flit.metadata]
+module = "wpilib_controller"
+dist-name = "wpilib-controller"
+author = "David Vo"
+author-email = "david@thedropbears.org.au"
+home-page = "https://github.com/auscompgeek/robotpy-wpilib-controller"
+license = "BSD-3-Clause"
+requires = [
+	"wpilib >=2018",
+	"typing-extensions",
+]
+requires-python = ">=3.6"
+keywords = "frc wpilib robotpy"
+classifiers = [
+	"Development Status :: 3 - Alpha",
+	"Intended Audience :: Developers",
+	"Intended Audience :: Education",
+	"License :: OSI Approved :: BSD License",
+	"Operating System :: OS Independent",
+	"Programming Language :: Python :: 3.6",
+	"Programming Language :: Python :: 3.7",
+	"Programming Language :: Python :: 3 :: Only",
+	"Topic :: Scientific/Engineering",
+]

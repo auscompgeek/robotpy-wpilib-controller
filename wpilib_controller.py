@@ -291,7 +291,7 @@ class PIDController(wpilib.SendableBase):
         :return: Error for continuous inputs.
         """
         input_range = self._input_range
-        if self.continuous and input_range:
+        if self.continuous and input_range > 0:
             error = math.fmod(error, input_range)
             if abs(error) > input_range / 2:
                 if error > 0:

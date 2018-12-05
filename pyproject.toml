@@ -9,6 +9,7 @@ author = "David Vo"
 author-email = "david@thedropbears.org.au"
 home-page = "https://github.com/auscompgeek/robotpy-wpilib-controller"
 license = "BSD-3-Clause"
+description-file = "README.md"
 requires = [
 	"wpilib >=2018",
 	"typing-extensions",

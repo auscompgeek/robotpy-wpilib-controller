@@ -74,17 +74,10 @@ class ControllerRunner:
     def _run(self):
         # Ensures self._enabled check and self.controller_output() call occur atomically
         with self._output_mutex:
-            mutex_owned = self._this_mutex.acquire()
-            try:
-                if self._enabled:
-                    # Don't block other ControllerRunner operations on output
-                    self._this_mutex.release()
-                    mutex_owned = False
-
-                    self.controller_output(self.controller_update())
-            finally:
-                if mutex_owned:
-                    self._this_mutex.release()
+            with self._this_mutex:
+                enabled = self._enabled
+            if enabled:
+                self.controller_output(self.controller_update())
 
 
 MeasurementSource = Callable[[], float]
@@ -366,12 +359,9 @@ class PIDController(wpilib.SendableBase):
         """
         input_range = self._input_range
         if self.continuous and input_range > 0:
-            error = math.fmod(error, input_range)
-            if abs(error) > input_range / 2:
-                if error > 0:
-                    return error - input_range
-                else:
-                    return error + input_range
+            error %= input_range
+            if error > input_range / 2:
+                return error - input_range
 
         return error
 

@@ -1,6 +1,6 @@
 """A backport of the upcoming (in 2020) WPILib PIDController."""
 
-__version__ = "0.2"
+__version__ = "0.3"
 
 import enum
 import math
@@ -84,12 +84,7 @@ MeasurementSource = Callable[[], float]
 
 
 class PIDController(wpilib.SendableBase):
-    """Class implements a PID Control Loop.
-
-    This feedback controller runs in discrete time, so time deltas are not used
-    in the integral and derivative calculations.  Therefore, the sample rate
-    affects the controller's behavior for a given set of PID constants.
-    """
+    """Class implements a PID Control Loop."""
 
     instances: ClassVar[int] = 0
 

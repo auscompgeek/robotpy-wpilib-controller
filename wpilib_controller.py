@@ -186,9 +186,9 @@ class PIDController(wpilib.SendableBase):
     def setReference(self, reference: float) -> None:
         """Set the reference for the PIDController."""
         with self._this_mutex:
-            if self.maximum_input > self.minimum_input:
+            if self._maximum_input > self._minimum_input:
                 self.reference = self._clamp(
-                    reference, self.minimum_input, self.maximum_input
+                    reference, self._minimum_input, self._maximum_input
                 )
             else:
                 self.reference = reference

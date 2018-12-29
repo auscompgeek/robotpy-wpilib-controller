@@ -1,6 +1,6 @@
 """A backport of the upcoming (in 2020) WPILib PIDController."""
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 import enum
 import math
@@ -209,7 +209,7 @@ class PIDController(wpilib.SendableBase):
         with self._this_mutex:
             delta_error = (error - self.prev_error) / self.period
             if self._tolerance_type is self.Tolerance.Percent:
-                input_range = self.input_range
+                input_range = self._input_range
                 return (
                     abs(error) < self._tolerance / 100 * input_range
                     and abs(delta_error) < self._delta_tolerance / 100 * input_range

@@ -1,6 +1,6 @@
 """A backport of the upcoming (in 2020) WPILib PIDController."""
 
-__version__ = "0.3"
+__version__ = "0.3.1"
 
 import enum
 import math
@@ -148,6 +148,7 @@ class PIDController(wpilib.SendableBase):
         :param period: The period between controller updates in seconds.
                        The default is 50ms.
         """
+        super().__init__()
         self._this_mutex = threading.RLock()
 
         self.period = period

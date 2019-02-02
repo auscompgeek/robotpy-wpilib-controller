@@ -248,7 +248,7 @@ class PIDController(wpilib.SendableBase):
     def setOutputRange(self, minimum_output: float, maximum_output: float) -> None:
         """Sets the minimum and maximum values to write."""
         with self._this_mutex:
-            self.mininum_output = minimum_output
+            self.minimum_output = minimum_output
             self.maximum_output = maximum_output
 
     def setAbsoluteTolerance(

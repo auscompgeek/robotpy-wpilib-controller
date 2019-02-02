@@ -338,17 +338,18 @@ class PIDController(wpilib.SendableBase):
     def initSendable(self, builder) -> None:
         builder.setSmartDashboardType("PIDController")
         builder.setSafeState(self.reset)
-        builder.addDoubleProperty("Kp", lambda: self.Kp, self.setP)
-        builder.addDoubleProperty("Ki", lambda: self.Ki, self.setI)
-        builder.addDoubleProperty("Kd", lambda: self.Kd, self.setD)
+        builder.addDoubleProperty("p", lambda: self.Kp, self.setP)
+        builder.addDoubleProperty("i", lambda: self.Ki, self.setI)
+        builder.addDoubleProperty("d", lambda: self.Kd, self.setD)
         builder.addDoubleProperty(
-            "feedforward",
+            "f",
             self.feedforward,
             lambda x: setattr(self, "feedforward", lambda: x),
         )
         builder.addDoubleProperty(
-            "reference", lambda: self.reference, self.setReference
+            "setpoint", lambda: self.reference, self.setReference
         )
+        # builder.addBooleanProperty("enabled", lambda: True, None)
 
     def getContinuousError(self, error: float) -> float:
         """Wraps error around for continuous inputs.

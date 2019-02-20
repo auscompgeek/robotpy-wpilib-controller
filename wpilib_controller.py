@@ -148,7 +148,7 @@ class PIDController(wpilib.SendableBase):
         :param period: The period between controller updates in seconds.
                        The default is 50ms.
         """
-        super().__init__()
+        super().__init__(addLiveWindow=False)
         self._this_mutex = threading.RLock()
 
         self.period = period

@@ -1,6 +1,6 @@
 """A backport of the upcoming (in 2020) WPILib PIDController."""
 
-__version__ = "0.4"
+__version__ = "0.4.1"
 
 import enum
 import math

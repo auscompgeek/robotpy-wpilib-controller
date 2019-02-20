@@ -101,7 +101,7 @@ def test_pidcontroller_init_args0():
 def test_pidcontroller_init_args5():
     source = lambda: 77.0
     with pytest.raises(TypeError) as exinfo:
-        pid = PIDController(
+        PIDController(
             Ki=2.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source
         )
 
@@ -114,7 +114,7 @@ def test_pidcontroller_init_args5():
 def test_pidcontroller_init_args6():
     source = lambda: 77.0
     with pytest.raises(TypeError) as exinfo:
-        pid = PIDController(
+        PIDController(
             Kp=2.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source
         )
 
@@ -127,7 +127,7 @@ def test_pidcontroller_init_args6():
 def test_pidcontroller_init_args7():
     source = lambda: 77.0
     with pytest.raises(TypeError) as exinfo:
-        pid = PIDController(
+        PIDController(
             Kp=2.0, Ki=3.0, feedforward=lambda: 4.0, measurement_source=source
         )
 
@@ -140,7 +140,7 @@ def test_pidcontroller_init_args7():
 def test_pidcontroller_init_args8():
     source = lambda: 77.0
     with pytest.raises(TypeError) as exinfo:
-        pid = PIDController(feedforward=lambda: 4.0, measurement_source=source)
+        PIDController(feedforward=lambda: 4.0, measurement_source=source)
 
     assert (
         exinfo.value.args[0]
@@ -202,8 +202,10 @@ def test_pidcontroller_calculate_rate4(pid, source, p, output1, output2):
 
     out = pid.update()
     # assert out == pytest.approx(output1, 0.01)
+    assert out > 0
     out = pid.update()
     # assert out == pytest.approx(output2, 0.01)
+    assert out > 0
 
 
 def test_pidcontroller_calculate_rate5(pid):
@@ -213,14 +215,15 @@ def test_pidcontroller_calculate_rate5(pid):
     pid.setReference(50.0)
     pid.setPID(Kp=0.0, Ki=0.0, Kd=0.75)
 
-    pid.update()
-    # # assert out == pytest.approx(0.375, 0.01)
+    out = pid.update()
+    # assert out == pytest.approx(0.375, 0.01)
+    assert out > 0
 
-    pid.update()
-    # # assert out == pytest.approx(0.375, 0.01)
+    out = pid.update()
+    assert out == pytest.approx(0.0, 0.01)
 
-    pid.update()
-    # # assert out == pytest.approx(0.075, 0.01)
+    out = pid.update()
+    assert out == pytest.approx(0.0, 0.01)
 
 
 def test_pidcontroller_calculate_rate6():
@@ -235,13 +238,16 @@ def test_pidcontroller_calculate_rate6():
 
     out = pid.update()
     # assert out == pytest.approx(0.5, 0.01)
+    assert out > 0
 
     out = pid.update()
     # assert out == pytest.approx(0.5, 0.01)
+    assert out > 0
 
     source.return_value = 49.9
     out = pid.update()
     # assert out == pytest.approx(0.5, 0.01)
+    assert out > 0
 
 
 @pytest.mark.parametrize(
@@ -268,6 +274,7 @@ def test_pidcontroller_calculate_rate7(
 
     assert pid.prev_error == pytest.approx(expected_error, 0.01)
     # assert out == pytest.approx(expected_output, 0.01)
+    assert out != 0
 
 
 @pytest.mark.parametrize(
@@ -285,13 +292,16 @@ def test_pidcontroller_calculate_displacement1(p, source1, source2, output1, out
 
     out = pid.update()
     # assert out == pytest.approx(output1, 0.01)
+    assert out > 0
 
     out = pid.update()
     # assert out == pytest.approx(output1, 0.01)
+    assert out > 0
 
     source.return_value = source2
     out = pid.update()
     # assert out == pytest.approx(output2, 0.01)
+    assert out > 0
 
 
 @pytest.mark.parametrize(
@@ -316,13 +326,16 @@ def test_pidcontroller_calculate_displacement2(
 
     out = pid.update()
     # assert out == pytest.approx(output1, 0.01)
+    assert out > 0
 
     out = pid.update()
     # assert out == pytest.approx(output2, 0.01)
+    assert out > 0
 
     source.return_value = source2
     out = pid.update()
     # assert out == pytest.approx(output3, 0.01)
+    assert out > 0
 
 
 @pytest.mark.parametrize(
@@ -347,13 +360,15 @@ def test_pidcontroller_calculate_displacement3(
 
     out = pid.update()
     # assert out == pytest.approx(output1, 0.01)
+    assert out > 0
 
     out = pid.update()
-    # assert out == pytest.approx(output2, 0.01)
+    assert out == pytest.approx(output2, 0.01)
 
     source.return_value = source2
     out = pid.update()
     # assert out == pytest.approx(output3, 0.01)
+    assert out < 0
 
 
 @pytest.mark.parametrize(
@@ -378,6 +393,7 @@ def test_pidcontroller_calculate_displacement4(
 
     out = pid.update()
     # assert out == pytest.approx(output1, 0.01)
+    assert out > 0
 
     out = pid.update()
     # assert out == pytest.approx(output2, 0.01)

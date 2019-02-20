@@ -1,0 +1,6 @@
+flit
+robotpy-hal-sim
+pytest
+coverage
+pyflakes
+black

@@ -38,7 +38,9 @@ def _get_pid():
 
 def test_pidcontroller_init_args1():
     source = lambda: 77.0
-    pid = PIDController(1.0, 2.0, 3.0, feedforward=lambda: 4.0, measurement_source=source, period=5.0)
+    pid = PIDController(
+        1.0, 2.0, 3.0, feedforward=lambda: 4.0, measurement_source=source, period=5.0
+    )
 
     assert pid.Kp == pytest.approx(1.0, 0.01)
     assert pid.Ki == pytest.approx(2.0, 0.01)
@@ -68,7 +70,9 @@ def test_pidcontroller_init_args3():
 
 def test_pidcontroller_init_args4():
     source = lambda: 77.0
-    pid = PIDController(1.0, 2.0, 3.0, feedforward=lambda: 4.0, measurement_source=source)
+    pid = PIDController(
+        1.0, 2.0, 3.0, feedforward=lambda: 4.0, measurement_source=source
+    )
 
     assert pid.Kp == pytest.approx(1.0, 0.01)
     assert pid.Ki == pytest.approx(2.0, 0.01)
@@ -80,7 +84,12 @@ def test_pidcontroller_init_args4():
 def test_pidcontroller_init_args0():
     source = lambda: 77.0
     pid = PIDController(
-        period=5.0, Ki=2.0, Kp=1.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source
+        period=5.0,
+        Ki=2.0,
+        Kp=1.0,
+        Kd=3.0,
+        feedforward=lambda: 4.0,
+        measurement_source=source,
     )
 
     assert pid.Kp == pytest.approx(1.0, 0.01)
@@ -92,7 +101,9 @@ def test_pidcontroller_init_args0():
 def test_pidcontroller_init_args5():
     source = lambda: 77.0
     with pytest.raises(TypeError) as exinfo:
-        pid = PIDController(Ki=2.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source)
+        pid = PIDController(
+            Ki=2.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source
+        )
 
     assert (
         exinfo.value.args[0]
@@ -103,7 +114,9 @@ def test_pidcontroller_init_args5():
 def test_pidcontroller_init_args6():
     source = lambda: 77.0
     with pytest.raises(TypeError) as exinfo:
-        pid = PIDController(Kp=2.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source)
+        pid = PIDController(
+            Kp=2.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source
+        )
 
     assert (
         exinfo.value.args[0]
@@ -114,7 +127,9 @@ def test_pidcontroller_init_args6():
 def test_pidcontroller_init_args7():
     source = lambda: 77.0
     with pytest.raises(TypeError) as exinfo:
-        pid = PIDController(Kp=2.0, Ki=3.0, feedforward=lambda: 4.0, measurement_source=source)
+        pid = PIDController(
+            Kp=2.0, Ki=3.0, feedforward=lambda: 4.0, measurement_source=source
+        )
 
     assert (
         exinfo.value.args[0]
@@ -135,7 +150,9 @@ def test_pidcontroller_init_args8():
 
 def test_pidcontroller_init_args10():
     source = lambda: 77.0
-    pid = PIDController(Ki="2.0", Kp=1.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source)
+    pid = PIDController(
+        Ki="2.0", Kp=1.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source
+    )
 
     assert pid.Kp == pytest.approx(1.0, 0.01)
     # eh?
@@ -257,9 +274,7 @@ def test_pidcontroller_calculate_rate7(
     "p, source1, source2, output1, output2",
     [(1.0, 49.5, 49.9, 0.5, 0.1), (0.5, 49.5, 49.9, 0.25, 0.05)],
 )
-def test_pidcontroller_calculate_displacement1(
-    p, source1, source2, output1, output2
-):
+def test_pidcontroller_calculate_displacement1(p, source1, source2, output1, output2):
     source = MagicMock()
     source.return_value = source1
     pid = PIDController(p, 0, 0, measurement_source=source)
@@ -466,14 +481,7 @@ def test_pidcontroller_initSendable_setter(
     pid, sendablebuilder, p, i, d, f, setpoint, enabled
 ):
     pid.initSendable(sendablebuilder)
-    (
-        p_prop,
-        i_prop,
-        d_prop,
-        f_prop,
-        setpoint_prop,
-        *_,
-    ) = sendablebuilder.properties
+    (p_prop, i_prop, d_prop, f_prop, setpoint_prop, *_) = sendablebuilder.properties
     assert p_prop.key == "p"
     assert i_prop.key == "i"
     assert d_prop.key == "d"

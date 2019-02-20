@@ -342,13 +342,9 @@ class PIDController(wpilib.SendableBase):
         builder.addDoubleProperty("i", lambda: self.Ki, self.setI)
         builder.addDoubleProperty("d", lambda: self.Kd, self.setD)
         builder.addDoubleProperty(
-            "f",
-            self.feedforward,
-            lambda x: setattr(self, "feedforward", lambda: x),
+            "f", self.feedforward, lambda x: setattr(self, "feedforward", lambda: x)
         )
-        builder.addDoubleProperty(
-            "setpoint", lambda: self.reference, self.setReference
-        )
+        builder.addDoubleProperty("setpoint", lambda: self.reference, self.setReference)
         # builder.addBooleanProperty("enabled", lambda: True, None)
 
     def getContinuousError(self, error: float) -> float:

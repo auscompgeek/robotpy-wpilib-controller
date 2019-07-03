@@ -12,7 +12,6 @@ license = "BSD-3-Clause"
 description-file = "README.md"
 requires = [
 	"wpilib >=2018",
-	"typing-extensions",
 ]
 requires-python = ">=3.6"
 keywords = "frc wpilib robotpy"

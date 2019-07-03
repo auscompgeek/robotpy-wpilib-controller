@@ -30,67 +30,22 @@ def pid():
 
 
 def _get_pid():
-    source = MagicMock()
-    source.return_value = 0
-    _pid = PIDController(Kp=1.0, Ki=0.25, Kd=0.75, measurement_source=source)
+    _pid = PIDController(Kp=1.0, Ki=0.25, Kd=0.75)
     return _pid
 
 
 def test_pidcontroller_init_args1():
-    source = lambda: 77.0
-    pid = PIDController(
-        1.0, 2.0, 3.0, feedforward=lambda: 4.0, measurement_source=source, period=5.0
-    )
+    pid = PIDController(1.0, 2.0, 3.0, period=5.0)
 
     assert pid.Kp == pytest.approx(1.0, 0.01)
     assert pid.Ki == pytest.approx(2.0, 0.01)
     assert pid.Kd == pytest.approx(3.0, 0.01)
     assert pid.period == pytest.approx(5.0, 0.01)
-
-
-def test_pidcontroller_init_args2():
-    source = lambda: 77.0
-    pid = PIDController(1.0, 2.0, 3.0, measurement_source=source, period=5.0)
-
-    assert pid.Kp == pytest.approx(1.0, 0.01)
-    assert pid.Ki == pytest.approx(2.0, 0.01)
-    assert pid.Kd == pytest.approx(3.0, 0.01)
-    assert pid.period == pytest.approx(5.0, 0.01)
-
-
-def test_pidcontroller_init_args3():
-    source = lambda: 77.0
-    pid = PIDController(1.0, 2.0, 3.0, measurement_source=source)
-
-    assert pid.Kp == pytest.approx(1.0, 0.01)
-    assert pid.Ki == pytest.approx(2.0, 0.01)
-    assert pid.Kd == pytest.approx(3.0, 0.01)
-    assert pid.period == pytest.approx(0.05, 0.01)
-
-
-def test_pidcontroller_init_args4():
-    source = lambda: 77.0
-    pid = PIDController(
-        1.0, 2.0, 3.0, feedforward=lambda: 4.0, measurement_source=source
-    )
-
-    assert pid.Kp == pytest.approx(1.0, 0.01)
-    assert pid.Ki == pytest.approx(2.0, 0.01)
-    assert pid.Kd == pytest.approx(3.0, 0.01)
-    assert pid.feedforward() == pytest.approx(4.0, 0.01)
-    assert pid.period == pytest.approx(0.05, 0.01)
 
 
 def test_pidcontroller_init_args0():
     source = lambda: 77.0
-    pid = PIDController(
-        period=5.0,
-        Ki=2.0,
-        Kp=1.0,
-        Kd=3.0,
-        feedforward=lambda: 4.0,
-        measurement_source=source,
-    )
+    pid = PIDController(period=5.0, Ki=2.0, Kp=1.0, Kd=3.0)
 
     assert pid.Kp == pytest.approx(1.0, 0.01)
     assert pid.Ki == pytest.approx(2.0, 0.01)
@@ -99,11 +54,8 @@ def test_pidcontroller_init_args0():
 
 
 def test_pidcontroller_init_args5():
-    source = lambda: 77.0
     with pytest.raises(TypeError) as exinfo:
-        PIDController(
-            Ki=2.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source
-        )
+        PIDController(Ki=2.0, Kd=3.0)
 
     assert (
         exinfo.value.args[0]
@@ -112,11 +64,8 @@ def test_pidcontroller_init_args5():
 
 
 def test_pidcontroller_init_args6():
-    source = lambda: 77.0
     with pytest.raises(TypeError) as exinfo:
-        PIDController(
-            Kp=2.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source
-        )
+        PIDController(Kp=2.0, Kd=3.0)
 
     assert (
         exinfo.value.args[0]
@@ -125,11 +74,8 @@ def test_pidcontroller_init_args6():
 
 
 def test_pidcontroller_init_args7():
-    source = lambda: 77.0
     with pytest.raises(TypeError) as exinfo:
-        PIDController(
-            Kp=2.0, Ki=3.0, feedforward=lambda: 4.0, measurement_source=source
-        )
+        PIDController(Kp=2.0, Ki=3.0)
 
     assert (
         exinfo.value.args[0]
@@ -138,9 +84,8 @@ def test_pidcontroller_init_args7():
 
 
 def test_pidcontroller_init_args8():
-    source = lambda: 77.0
     with pytest.raises(TypeError) as exinfo:
-        PIDController(feedforward=lambda: 4.0, measurement_source=source)
+        PIDController()
 
     assert (
         exinfo.value.args[0]
@@ -148,37 +93,24 @@ def test_pidcontroller_init_args8():
     )
 
 
-def test_pidcontroller_init_args10():
-    source = lambda: 77.0
-    pid = PIDController(
-        Ki="2.0", Kp=1.0, Kd=3.0, feedforward=lambda: 4.0, measurement_source=source
-    )
-
-    assert pid.Kp == pytest.approx(1.0, 0.01)
-    # eh?
-    assert pid.Ki == "2.0"
-    assert pid.Kd == pytest.approx(3.0, 0.01)
-    assert pid.period == pytest.approx(0.05, 0.01)
-
-
 def test_pidcontroller_calculate_rate1(pid):
     pid.setInputRange(0, 100.0)
     pid.setOutputRange(-1, 1)
-    pid.setReference(50.0)
+    pid.setSetpoint(50.0)
     pid.setPID(Kp=1.0, Ki=0.25, Kd=0.75)
 
-    pid.update()
+    pid.calculate(0)
 
 
 def test_pidcontroller_calculate_rate2(pid):
     pid.setInputRange(0, 100.0)
     pid.setOutputRange(-1, 1)
-    pid.setReference(50.0)
+    pid.setSetpoint(50.0)
     pid.setPID(Kp=1.0, Ki=0.25, Kd=0.75)
 
-    pid.update()
+    pid.calculate(0)
 
-    assert pid.prev_error == pytest.approx(50.0)
+    assert pid.getError() == pytest.approx(50.0)
     # assert pid.total_error == pytest.approx(0.5)
 
 
@@ -197,13 +129,13 @@ def test_pidcontroller_calculate_rate4(pid, source, p, output1, output2):
     # P is aggregated error coeff for kRate..
     pid.setInputRange(0, 100.0)
     pid.setOutputRange(-1, 1)
-    pid.setReference(50.0)
+    pid.setSetpoint(50.0)
     pid.setPID(Kp=p, Ki=0.0, Kd=0.0)
 
-    out = pid.update()
+    out = pid.calculate(0)
     # assert out == pytest.approx(output1, 0.01)
     assert out > 0
-    out = pid.update()
+    out = pid.calculate(0)
     # assert out == pytest.approx(output2, 0.01)
     assert out > 0
 
@@ -212,42 +144,18 @@ def test_pidcontroller_calculate_rate5(pid):
     # D is proportional error coeff for kRate
     pid.setInputRange(0, 100.0)
     pid.setOutputRange(-1, 1)
-    pid.setReference(50.0)
+    pid.setSetpoint(50.0)
     pid.setPID(Kp=0.0, Ki=0.0, Kd=0.75)
 
-    out = pid.update()
+    out = pid.calculate(0)
     # assert out == pytest.approx(0.375, 0.01)
     assert out > 0
 
-    out = pid.update()
+    out = pid.calculate(0)
     assert out == pytest.approx(0.0, 0.01)
 
-    out = pid.update()
+    out = pid.calculate(0)
     assert out == pytest.approx(0.0, 0.01)
-
-
-def test_pidcontroller_calculate_rate6():
-    source = MagicMock()
-    source.return_value = 49.5
-    pid = PIDController(0, 0, 0, feedforward=lambda: 0.01, measurement_source=source)
-
-    # F is coeff for some feed forward calc for kRate
-    pid.setInputRange(0, 100.0)
-    pid.setOutputRange(-1, 1)
-    pid.setReference(50.0)
-
-    out = pid.update()
-    # assert out == pytest.approx(0.5, 0.01)
-    assert out > 0
-
-    out = pid.update()
-    # assert out == pytest.approx(0.5, 0.01)
-    assert out > 0
-
-    source.return_value = 49.9
-    out = pid.update()
-    # assert out == pytest.approx(0.5, 0.01)
-    assert out > 0
 
 
 @pytest.mark.parametrize(
@@ -264,15 +172,15 @@ def test_pidcontroller_calculate_rate6():
 def test_pidcontroller_calculate_rate7(
     continuous, input, setpoint, expected_error, expected_output
 ):
-    pid = PIDController(0.1, 0, 0.075, measurement_source=lambda: input)
+    pid = PIDController(0.1, 0, 0.075)
     pid.setInputRange(-180.0, 180.0)
     pid.setContinuous(continuous)
     pid.setOutputRange(-1, 1)
-    pid.setReference(setpoint)
+    pid.setSetpoint(setpoint)
 
-    out = pid.update()
+    out = pid.calculate(input)
 
-    assert pid.prev_error == pytest.approx(expected_error, 0.01)
+    assert pid.getError() == pytest.approx(expected_error, 0.01)
     # assert out == pytest.approx(expected_output, 0.01)
     assert out != 0
 
@@ -282,24 +190,21 @@ def test_pidcontroller_calculate_rate7(
     [(1.0, 49.5, 49.9, 0.5, 0.1), (0.5, 49.5, 49.9, 0.25, 0.05)],
 )
 def test_pidcontroller_calculate_displacement1(p, source1, source2, output1, output2):
-    source = MagicMock()
-    source.return_value = source1
-    pid = PIDController(p, 0, 0, measurement_source=source)
+    pid = PIDController(p, 0, 0)
     # P is proportional error coeff for kDisplacement
     pid.setInputRange(0, 100.0)
     pid.setOutputRange(-1, 1)
-    pid.setReference(50.0)
+    pid.setSetpoint(50.0)
 
-    out = pid.update()
+    out = pid.calculate(source1)
     # assert out == pytest.approx(output1, 0.01)
     assert out > 0
 
-    out = pid.update()
+    out = pid.calculate(source1)
     # assert out == pytest.approx(output1, 0.01)
     assert out > 0
 
-    source.return_value = source2
-    out = pid.update()
+    out = pid.calculate(source2)
     # assert out == pytest.approx(output2, 0.01)
     assert out > 0
 
@@ -315,25 +220,22 @@ def test_pidcontroller_calculate_displacement1(p, source1, source2, output1, out
 def test_pidcontroller_calculate_displacement2(
     i, source1, source2, output1, output2, output3
 ):
-    source = MagicMock()
-    source.return_value = source1
-    pid = PIDController(0, i, 0, measurement_source=source)
+    pid = PIDController(0, i, 0)
 
     # I is aggregated error coeff for kDisplacement
     pid.setInputRange(0, 100.0)
     pid.setOutputRange(-1, 1)
-    pid.setReference(50.0)
+    pid.setSetpoint(50.0)
 
-    out = pid.update()
+    out = pid.calculate(source1)
     # assert out == pytest.approx(output1, 0.01)
     assert out > 0
 
-    out = pid.update()
+    out = pid.calculate(source1)
     # assert out == pytest.approx(output2, 0.01)
     assert out > 0
 
-    source.return_value = source2
-    out = pid.update()
+    out = pid.calculate(source2)
     # assert out == pytest.approx(output3, 0.01)
     assert out > 0
 
@@ -349,58 +251,23 @@ def test_pidcontroller_calculate_displacement2(
 def test_pidcontroller_calculate_displacement3(
     d, source1, source2, output1, output2, output3
 ):
-    source = MagicMock()
-    source.return_value = source1
-    pid = PIDController(0, 0, d, measurement_source=source)
+    pid = PIDController(0, 0, d)
 
     # D is change in error coeff for kDisplacement
     pid.setInputRange(0, 100.0)
     pid.setOutputRange(-1, 1)
-    pid.setReference(50.0)
+    pid.setSetpoint(50.0)
 
-    out = pid.update()
+    out = pid.calculate(source1)
     # assert out == pytest.approx(output1, 0.01)
     assert out > 0
 
-    out = pid.update()
+    out = pid.calculate(source1)
     assert out == pytest.approx(output2, 0.01)
 
-    source.return_value = source2
-    out = pid.update()
+    out = pid.calculate(source2)
     # assert out == pytest.approx(output3, 0.01)
     assert out < 0
-
-
-@pytest.mark.parametrize(
-    "f, source1, source2, output1, output2, output3",
-    [
-        (1.0, 49.5, 49.9, 1.0, 0.0, 0.0),
-        (0.5, 49.5, 49.9, 1.0, 0.0, 0.0),
-        (1.0, 49.5, 50.6, 1.0, 0.0, 0.0),
-    ],
-)
-def test_pidcontroller_calculate_displacement4(
-    f, source1, source2, output1, output2, output3
-):
-    source = MagicMock()
-    source.return_value = source1
-    pid = PIDController(0, 0, 0, feedforward=lambda: f, measurement_source=source)
-
-    # F is coeff for some feed forward calc for kDisplacement
-    pid.setInputRange(0, 100.0)
-    pid.setOutputRange(-1, 1)
-    pid.setReference(50.0)
-
-    out = pid.update()
-    # assert out == pytest.approx(output1, 0.01)
-    assert out > 0
-
-    out = pid.update()
-    # assert out == pytest.approx(output2, 0.01)
-
-    source.return_value = source2
-    out = pid.update()
-    # assert out == pytest.approx(output3, 0.01)
 
 
 @pytest.mark.parametrize("p,i,d", [(1.0, 2.0, 3.0)])
@@ -421,12 +288,12 @@ def test_pidcontroller_setPID(pid, p, i, d):
     ],
 )
 def test_pidcontroller_setInputRange1(pid, setpoint, lower, upper, new_setpoint):
-    pid.setReference(setpoint)
+    pid.setSetpoint(setpoint)
     pid.setInputRange(lower, upper)
 
     assert pid._minimum_input == lower
     assert pid._maximum_input == upper
-    assert pid.reference == new_setpoint
+    assert pid.setpoint == new_setpoint
 
 
 """
@@ -454,16 +321,16 @@ def test_pidcontroller_setOutputRange2(pid):
 """
 
 
-def test_pidcontroller_setReference1(pid):
-    pid.setReference(1.0)
+def test_pidcontroller_setSetpoint1(pid):
+    pid.setSetpoint(1.0)
 
-    assert pid.reference == 1.0
+    assert pid.setpoint == 1.0
 
 
-def test_pidcontroller_setReference2(pid, sendablebuilder):
+def test_pidcontroller_setSetpoint2(pid, sendablebuilder):
     pid.initSendable(sendablebuilder)
     assert sendablebuilder.getTable().getNumber("setpoint", 0.0) == 0.0
-    pid.setReference(1.0)
+    pid.setSetpoint(1.0)
     sendablebuilder.updateTable()
     assert sendablebuilder.getTable().getNumber("setpoint", 0.0) == 1.0
 
@@ -476,16 +343,14 @@ def test_pidcontroller_initSendable_update(
     assert sendablebuilder.getTable().getNumber("p", 0.0) == 0.0
     assert sendablebuilder.getTable().getNumber("i", 0.0) == 0.0
     assert sendablebuilder.getTable().getNumber("d", 0.0) == 0.0
-    assert sendablebuilder.getTable().getNumber("f", 0.0) == 0.0
     assert sendablebuilder.getTable().getNumber("setpoint", 0.0) == 0.0
-    assert sendablebuilder.getTable().getBoolean("enabled", None) is None
-    pid.setReference(setpoint)
+    # assert sendablebuilder.getTable().getBoolean("enabled", None) is None
+    pid.setSetpoint(setpoint)
     pid.setPID(p, i, d)
     sendablebuilder.updateTable()
     assert sendablebuilder.getTable().getNumber("p", 0.0) == pytest.approx(p, 0.01)
     assert sendablebuilder.getTable().getNumber("i", 0.0) == pytest.approx(i, 0.01)
     assert sendablebuilder.getTable().getNumber("d", 0.0) == pytest.approx(d, 0.01)
-    assert sendablebuilder.getTable().getNumber("f", 0.0) == pytest.approx(0, 0.01)
     assert sendablebuilder.getTable().getNumber("setpoint", 0.0) == pytest.approx(
         setpoint, 0.01
     )
@@ -497,11 +362,10 @@ def test_pidcontroller_initSendable_setter(
     pid, sendablebuilder, p, i, d, f, setpoint, enabled
 ):
     pid.initSendable(sendablebuilder)
-    (p_prop, i_prop, d_prop, f_prop, setpoint_prop, *_) = sendablebuilder.properties
+    (p_prop, i_prop, d_prop, setpoint_prop, *_) = sendablebuilder.properties
     assert p_prop.key == "p"
     assert i_prop.key == "i"
     assert d_prop.key == "d"
-    assert f_prop.key == "f"
     assert setpoint_prop.key == "setpoint"
     # assert enabled_prop.key == "enabled"
 
@@ -514,11 +378,8 @@ def test_pidcontroller_initSendable_setter(
     d_prop.setter(d)
     assert pid.Kd == d
 
-    f_prop.setter(f)
-    assert pid.feedforward() == f
-
     setpoint_prop.setter(setpoint)
-    assert pid.reference == setpoint
+    assert pid.setpoint == setpoint
 
     # enabled_prop.setter(enabled)
     # assert pid.isEnabled() == enabled

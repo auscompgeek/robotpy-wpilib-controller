@@ -1,6 +1,6 @@
 """A backport of the upcoming (in 2020) WPILib PIDController."""
 
-__version__ = "0.5"
+__version__ = "0.5.1"
 
 import enum
 import math
@@ -27,6 +27,7 @@ class PIDControllerRunner(wpilib.SendableBase):
         :param controller_output: The function which updates the plant using the controller output
                                   passed as the argument.
         """
+        super().__init__()
         self._enabled = False
 
         self.controller = controller

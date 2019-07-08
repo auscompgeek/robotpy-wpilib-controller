@@ -1,6 +1,6 @@
 """A backport of the upcoming (in 2020) WPILib PIDController."""
 
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 import enum
 import math
@@ -10,7 +10,7 @@ from typing import Any, Callable, ClassVar, Optional
 
 import wpilib
 
-__any__ = ("PIDController", "PIDControllerRunner", "MeasurementSource")
+__any__ = ("PIDController", "PIDControllerRunner")
 
 
 class PIDControllerRunner(wpilib.SendableBase):
@@ -36,8 +36,8 @@ class PIDControllerRunner(wpilib.SendableBase):
 
         self._this_mutex = threading.RLock()
 
-        # Ensures when disable() is called, self.controller_output() won't
-        # run if Controller.update() is already running at that time.
+        # Ensures when disable() is called, controller_output() won't
+        # run if controller.update() is already running at that time.
         self._output_mutex = threading.RLock()
 
         self.notifier = wpilib.Notifier(self._run)
@@ -131,8 +131,6 @@ class PIDController(wpilib.SendableBase):
     setpoint: float = 0
     output: float = 0
 
-    _this_mutex: threading.RLock
-
     def __init__(
         self, Kp: float, Ki: float, Kd: float, *, period: float = 0.02
     ) -> None:
@@ -196,11 +194,10 @@ class PIDController(wpilib.SendableBase):
         """
         Return true if the error is within the percentage of the specified tolerances.
 
-        This asssumes that the maximum and minimum input were set using setInput.
-
         This will return false until at least one input value has been computed.
 
-        If no arguments are given, defaults to the tolerances set by setTolerance.
+        If no arguments are given, defaults to the tolerances set by
+        :meth:`setAbsoluteTolerance` or :meth:`setPercentTolerance`.
 
         :param tolerance: The maximum allowable error.
         :param delta_tolerance: The maximum allowable change in error, if tolerance is specified.
@@ -239,18 +236,24 @@ class PIDController(wpilib.SendableBase):
     def setInputRange(self, minimum_input: float, maximum_input: float) -> None:
         """Sets the maximum and minimum values expected from the input.
 
-        :param minimumInput: the minimum value expected from the input
-        :param maximumInput: the maximum value expected from the output
+        :param minimum_input: The minimum value expected from the input.
+        :param maximum_input: The maximum value expected from the input.
         """
         with self._this_mutex:
             self._minimum_input = minimum_input
             self._maximum_input = maximum_input
             self._input_range = maximum_input - minimum_input
 
-        self.setSetpoint(self.setpoint)
+            # Clamp setpoint to new input
+            if maximum_input > minimum_input:
+                self.setpoint = self._clamp(self.setpoint, minimum_input, maximum_input)
 
     def setOutputRange(self, minimum_output: float, maximum_output: float) -> None:
-        """Sets the minimum and maximum values to write."""
+        """Sets the minimum and maximum values to write.
+
+        :param minimum_output: the minimum value to write to the output
+        :param maximum_output: the maximum value to write to the output
+        """
         with self._this_mutex:
             self.minimum_output = minimum_output
             self.maximum_output = maximum_output
@@ -296,42 +299,41 @@ class PIDController(wpilib.SendableBase):
 
     def calculate(self, measurement: float, setpoint: Optional[float] = None) -> float:
         """
-        Calculates the output of the PID controller.
+        Returns the next output of the PID controller.
 
         :param measurement: The current measurement of the process variable.
-        :param setpoint: The setpoint of the controller if specified.
-        :returns: The controller output.
+        :param setpoint: The new setpoint of the controller if specified.
         """
-        if setpoint is not None:
-            self.setSetpoint(setpoint)
-
         with self._this_mutex:
-            Kp = self.Kp
+            if setpoint is not None:
+                self.setSetpoint(setpoint)
+
             Ki = self.Ki
-            Kd = self.Kd
             minimum_output = self.minimum_output
             maximum_output = self.maximum_output
 
             prev_error = self.prev_error = self.curr_error
-            error = self.curr_error = self.getContinuousError(self.setpoint - measurement)
+            error = self.curr_error = self.getContinuousError(
+                self.setpoint - measurement
+            )
             total_error = self.total_error
 
             period = self.period
 
-        if Ki:
-            total_error = self._clamp(
-                total_error + error * period, minimum_output / Ki, maximum_output / Ki
+            if Ki:
+                total_error = self.total_error = self._clamp(
+                    total_error + error * period,
+                    minimum_output / Ki,
+                    maximum_output / Ki,
+                )
+
+            output = self.output = self._clamp(
+                self.Kp * error
+                + Ki * total_error
+                + self.Kd * (error - prev_error) / period,
+                minimum_output,
+                maximum_output,
             )
-
-        output = self._clamp(
-            Kp * error + Ki * total_error + Kd * (error - prev_error) / period,
-            minimum_output,
-            maximum_output,
-        )
-
-        with self._this_mutex:
-            self.total_error = total_error
-            self.output = output
 
         return output
 

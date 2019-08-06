@@ -1,88 +1,15 @@
 """A backport of the upcoming (in 2020) WPILib PIDController."""
 
-__version__ = "0.5.2"
+__version__ = "0.6"
 
 import enum
 import math
-import threading
 
-from typing import Any, Callable, ClassVar, Optional
+from typing import ClassVar, Optional
 
 import wpilib
 
-__any__ = ("PIDController", "PIDControllerRunner")
-
-
-class PIDControllerRunner(wpilib.SendableBase):
-    def __init__(
-        self,
-        controller: "PIDController",
-        measurement_source: Callable[[], float],
-        controller_output: Callable[[float], Any],
-    ) -> None:
-        """
-        Allocates a PIDControllerRunner.
-
-        :param measurement_source: The function that supplies the current process variable measurement.
-        :param controller_output: The function which updates the plant using the controller output
-                                  passed as the argument.
-        """
-        super().__init__()
-        self._enabled = False
-
-        self.controller = controller
-        self.controller_output = controller_output
-        self.measurement_source = measurement_source
-
-        self._this_mutex = threading.RLock()
-
-        # Ensures when disable() is called, controller_output() won't
-        # run if controller.update() is already running at that time.
-        self._output_mutex = threading.RLock()
-
-        self.notifier = wpilib.Notifier(self._run)
-        self.notifier.startPeriodic(controller.period)
-
-    def enable(self):
-        """Begin running the controller."""
-        with self._this_mutex:
-            self._enabled = True
-
-    def disable(self):
-        """Stop running the controller.
-
-        This sets the output to zero before stopping.
-        """
-        # Ensures self._enabled modification and self.controller_output()
-        # call occur atomically
-        with self._output_mutex:
-            with self._this_mutex:
-                self._enabled = False
-            self.controller_output(0)
-
-    def isEnabled(self):
-        """Returns whether controller is running."""
-        with self._this_mutex:
-            return self._enabled
-
-    def _run(self):
-        # Ensures self._enabled check and self.controller_output() call occur atomically
-        with self._output_mutex:
-            with self._this_mutex:
-                enabled = self._enabled
-            if enabled:
-                self.controller_output(
-                    self.controller.calculate(self.measurement_source())
-                )
-
-    def initSendable(self, builder) -> None:
-        self.controller.initSendable(builder)
-        builder.setSafeState(self.disable)
-        builder.addBooleanProperty(
-            "enabled",
-            self.isEnabled,
-            lambda enabled: self.enable() if enabled else self.disable(),
-        )
+__any__ = ("PIDController",)
 
 
 class PIDController(wpilib.SendableBase):
@@ -143,7 +70,6 @@ class PIDController(wpilib.SendableBase):
                        The default is 20ms.
         """
         super().__init__(addLiveWindow=False)
-        self._this_mutex = threading.RLock()
 
         self.period = period
         self.Kp = Kp
@@ -155,35 +81,30 @@ class PIDController(wpilib.SendableBase):
 
     def setPID(self, Kp: float, Ki: float, Kd: float) -> None:
         """Set the PID Controller gain parameters."""
-        with self._this_mutex:
-            self.Kp = Kp
-            self.Ki = Ki
-            self.Kd = Kd
+        self.Kp = Kp
+        self.Ki = Ki
+        self.Kd = Kd
 
     def setP(self, Kp: float) -> None:
         """Set the Proportional coefficient of the PID controller gain."""
-        with self._this_mutex:
-            self.Kp = Kp
+        self.Kp = Kp
 
     def setI(self, Ki: float) -> None:
         """Set the Integral coefficient of the PID controller gain."""
-        with self._this_mutex:
-            self.Ki = Ki
+        self.Ki = Ki
 
     def setD(self, Kd: float) -> None:
         """Set the Differential coefficient of the PID controller gain."""
-        with self._this_mutex:
-            self.Kd = Kd
+        self.Kd = Kd
 
     def setSetpoint(self, setpoint: float) -> None:
         """Set the setpoint for the PIDController."""
-        with self._this_mutex:
-            if self._maximum_input > self._minimum_input:
-                self.setpoint = self._clamp(
-                    setpoint, self._minimum_input, self._maximum_input
-                )
-            else:
-                self.setpoint = setpoint
+        if self._maximum_input > self._minimum_input:
+            self.setpoint = self._clamp(
+                setpoint, self._minimum_input, self._maximum_input
+            )
+        else:
+            self.setpoint = setpoint
 
     def atSetpoint(
         self,
@@ -210,16 +131,15 @@ class PIDController(wpilib.SendableBase):
 
         error = self.getError()
 
-        with self._this_mutex:
-            delta_error = (error - self.prev_error) / self.period
-            if tolerance_type is self.Tolerance.Percent:
-                input_range = self._input_range
-                return (
-                    abs(error) < tolerance / 100 * input_range
-                    and abs(delta_error) < delta_tolerance / 100 * input_range
-                )
-            else:
-                return abs(error) < tolerance and abs(delta_error) < delta_tolerance
+        delta_error = (error - self.prev_error) / self.period
+        if tolerance_type is self.Tolerance.Percent:
+            input_range = self._input_range
+            return (
+                abs(error) < tolerance / 100 * input_range
+                and abs(delta_error) < delta_tolerance / 100 * input_range
+            )
+        else:
+            return abs(error) < tolerance and abs(delta_error) < delta_tolerance
 
     def setContinuous(self, continuous: bool = True) -> None:
         """Set the PID controller to consider the input to be continuous.
@@ -230,8 +150,7 @@ class PIDController(wpilib.SendableBase):
 
         :param continuous: True turns on continuous, False turns off continuous
         """
-        with self._this_mutex:
-            self.continuous = continuous
+        self.continuous = continuous
 
     def setInputRange(self, minimum_input: float, maximum_input: float) -> None:
         """Sets the maximum and minimum values expected from the input.
@@ -239,14 +158,13 @@ class PIDController(wpilib.SendableBase):
         :param minimum_input: The minimum value expected from the input.
         :param maximum_input: The maximum value expected from the input.
         """
-        with self._this_mutex:
-            self._minimum_input = minimum_input
-            self._maximum_input = maximum_input
-            self._input_range = maximum_input - minimum_input
+        self._minimum_input = minimum_input
+        self._maximum_input = maximum_input
+        self._input_range = maximum_input - minimum_input
 
-            # Clamp setpoint to new input
-            if maximum_input > minimum_input:
-                self.setpoint = self._clamp(self.setpoint, minimum_input, maximum_input)
+        # Clamp setpoint to new input
+        if maximum_input > minimum_input:
+            self.setpoint = self._clamp(self.setpoint, minimum_input, maximum_input)
 
     def setOutputRange(self, minimum_output: float, maximum_output: float) -> None:
         """Sets the minimum and maximum values to write.
@@ -254,9 +172,8 @@ class PIDController(wpilib.SendableBase):
         :param minimum_output: the minimum value to write to the output
         :param maximum_output: the maximum value to write to the output
         """
-        with self._this_mutex:
-            self.minimum_output = minimum_output
-            self.maximum_output = maximum_output
+        self.minimum_output = minimum_output
+        self.maximum_output = maximum_output
 
     def setAbsoluteTolerance(
         self, tolerance: float, delta_tolerance: float = math.inf
@@ -267,10 +184,9 @@ class PIDController(wpilib.SendableBase):
         :param tolerance: Absolute error which is tolerable.
         :param delta_tolerance: Change in absolute error per second which is tolerable.
         """
-        with self._this_mutex:
-            self._tolerance_type = self.Tolerance.Absolute
-            self._tolerance = tolerance
-            self._delta_tolerance = delta_tolerance
+        self._tolerance_type = self.Tolerance.Absolute
+        self._tolerance = tolerance
+        self._delta_tolerance = delta_tolerance
 
     def setPercentTolerance(
         self, tolerance: float, delta_tolerance: float = math.inf
@@ -281,21 +197,17 @@ class PIDController(wpilib.SendableBase):
         :param tolerance: Percent error which is tolerable.
         :param delta_tolerance: Change in percent error per second which is tolerable.
         """
-        with self._this_mutex:
-            self._tolerance_type = self.Tolerance.Percent
-            self._tolerance = tolerance
-            self._delta_tolerance = delta_tolerance
+        self._tolerance_type = self.Tolerance.Percent
+        self._tolerance = tolerance
+        self._delta_tolerance = delta_tolerance
 
     def getError(self) -> float:
         """Returns the difference between the setpoint and the measurement."""
-        with self._this_mutex:
-            return self.getContinuousError(self.curr_error)
+        return self.getContinuousError(self.curr_error)
 
     def getDeltaError(self) -> float:
         """Returns the change in error per second."""
-        error = self.getError()
-        with self._this_mutex:
-            return (error - self.prev_error) / self.period
+        return (self.getError() - self.prev_error) / self.period
 
     def calculate(self, measurement: float, setpoint: Optional[float] = None) -> float:
         """
@@ -304,45 +216,39 @@ class PIDController(wpilib.SendableBase):
         :param measurement: The current measurement of the process variable.
         :param setpoint: The new setpoint of the controller if specified.
         """
-        with self._this_mutex:
-            if setpoint is not None:
-                self.setSetpoint(setpoint)
+        if setpoint is not None:
+            self.setSetpoint(setpoint)
 
-            Ki = self.Ki
-            minimum_output = self.minimum_output
-            maximum_output = self.maximum_output
+        Ki = self.Ki
+        minimum_output = self.minimum_output
+        maximum_output = self.maximum_output
 
-            prev_error = self.prev_error = self.curr_error
-            error = self.curr_error = self.getContinuousError(
-                self.setpoint - measurement
+        prev_error = self.prev_error = self.curr_error
+        error = self.curr_error = self.getContinuousError(self.setpoint - measurement)
+        total_error = self.total_error
+
+        period = self.period
+
+        if Ki:
+            total_error = self.total_error = self._clamp(
+                total_error + error * period, minimum_output / Ki, maximum_output / Ki
             )
-            total_error = self.total_error
 
-            period = self.period
-
-            if Ki:
-                total_error = self.total_error = self._clamp(
-                    total_error + error * period,
-                    minimum_output / Ki,
-                    maximum_output / Ki,
-                )
-
-            output = self.output = self._clamp(
-                self.Kp * error
-                + Ki * total_error
-                + self.Kd * (error - prev_error) / period,
-                minimum_output,
-                maximum_output,
-            )
+        output = self.output = self._clamp(
+            self.Kp * error
+            + Ki * total_error
+            + self.Kd * (error - prev_error) / period,
+            minimum_output,
+            maximum_output,
+        )
 
         return output
 
     def reset(self) -> None:
         """Reset the previous error, the integral term, and disable the controller."""
-        with self._this_mutex:
-            self.prev_error = 0
-            self.total_error = 0
-            self.output = 0
+        self.prev_error = 0
+        self.total_error = 0
+        self.output = 0
 
     def initSendable(self, builder) -> None:
         builder.setSmartDashboardType("PIDController")
@@ -356,7 +262,6 @@ class PIDController(wpilib.SendableBase):
         """Wraps error around for continuous inputs.
 
         The original error is returned if continuous mode is disabled.
-        This is an unsynchronized function.
 
         :param error: The current error of the PID controller.
         :return: Error for continuous inputs.

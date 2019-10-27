@@ -48,12 +48,6 @@ class PIDController(wpilib.SendableBase):
     #: The sum of the errors for use in the integral calc
     total_error: float = 0
 
-    class Tolerance(enum.Enum):
-        Absolute = enum.auto()
-        Percent = enum.auto()
-
-    _tolerance_type: Tolerance = Tolerance.Absolute
-
     #: The percentage or absolute error that is considered at setpoint.
     _position_tolerance: float = 0.05
     _velocity_tolerance: float = math.inf
@@ -108,42 +102,18 @@ class PIDController(wpilib.SendableBase):
         else:
             self.setpoint = setpoint
 
-    def atSetpoint(
-        self,
-        position_tolerance: Optional[float] = None,
-        velocity_tolerance: float = math.inf,
-        tolerance_type: Tolerance = Tolerance.Absolute,
-    ) -> bool:
+    def atSetpoint(self) -> bool:
         """
         Return true if the error is within the percentage of the specified tolerances.
 
         This will return false until at least one input value has been computed.
-
-        If no arguments are given, defaults to the tolerances set by
-        :meth:`setAbsoluteTolerance` or :meth:`setPercentTolerance`.
-
-        :param tolerance: The maximum allowable error.
-        :param delta_tolerance: The maximum allowable change in error, if tolerance is specified.
-        :param tolerance_type: The type of tolerances specified.
         """
-        if position_tolerance is None:
-            position_tolerance = self._position_tolerance
-            velocity_tolerance = self._velocity_tolerance
-            tolerance_type = self._tolerance_type
+        return (
+            abs(self._position_error) < self._position_tolerance
+            and abs(self._velocity_error) < self._velocity_tolerance
+        )
 
-        if tolerance_type is self.Tolerance.Percent:
-            input_range = self._input_range
-            return (
-                abs(self._position_error) < position_tolerance / 100 * input_range
-                and abs(self._velocity_error) < velocity_tolerance / 100 * input_range
-            )
-        else:
-            return (
-                abs(self._position_error) < position_tolerance
-                and abs(self._velocity_error) < velocity_tolerance
-            )
-
-    def setInputRange(self, minimum_input: float, maximum_input: float) -> None:
+    def _setInputRange(self, minimum_input: float, maximum_input: float) -> None:
         """Sets the maximum and minimum values expected from the input.
 
         :param minimum_input: The minimum value expected from the input.
@@ -168,7 +138,7 @@ class PIDController(wpilib.SendableBase):
         :param maximum_input: The maximum value expected from the input.
         """
         self.continuous = True
-        self.setInputRange(minimum_input, maximum_input)
+        self._setInputRange(minimum_input, maximum_input)
 
     def disableContinuousInput(self) -> None:
         """Disables continuous input."""
@@ -183,29 +153,15 @@ class PIDController(wpilib.SendableBase):
         self.minimum_output = minimum_output
         self.maximum_output = maximum_output
 
-    def setAbsoluteTolerance(
+    def setTolerance(
         self, position_tolerance: float, velocity_tolerance: float = math.inf
     ) -> None:
         """
-        Set the absolute error which is considered tolerable for use with atSetpoint().
+        Sets the error which is considered tolerable for use with atSetpoint().
 
         :param position_tolerance: Position error which is tolerable.
         :param velocity_tolerance: Velocity error which is tolerable.
         """
-        self._tolerance_type = self.Tolerance.Absolute
-        self._position_tolerance = position_tolerance
-        self._velocity_tolerance = velocity_tolerance
-
-    def setPercentTolerance(
-        self, position_tolerance: float, velocity_tolerance: float = math.inf
-    ) -> None:
-        """
-        Set the percent error which is considered tolerable for use with atSetpoint().
-
-        :param position_tolerance: Position error which is tolerable.
-        :param velocity_tolerance: Velocity error which is tolerable.
-        """
-        self._tolerance_type = self.Tolerance.Percent
         self._position_tolerance = position_tolerance
         self._velocity_tolerance = velocity_tolerance
 

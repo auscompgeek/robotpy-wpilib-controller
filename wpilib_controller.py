@@ -2,7 +2,6 @@
 
 __version__ = "0.7"
 
-import enum
 import math
 
 from typing import ClassVar, Optional

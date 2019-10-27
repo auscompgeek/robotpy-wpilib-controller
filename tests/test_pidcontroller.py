@@ -94,7 +94,7 @@ def test_pidcontroller_init_args8():
 
 def test_pidcontroller_calculate_rate1(pid):
     pid.enableContinuousInput(0, 100.0)
-    pid.setOutputRange(-1, 1)
+    pid.setIntegratorRange(-1, 1)
     pid.setSetpoint(50.0)
     pid.setPID(Kp=1.0, Ki=0.25, Kd=0.75)
 
@@ -103,7 +103,7 @@ def test_pidcontroller_calculate_rate1(pid):
 
 def test_pidcontroller_calculate_rate2(pid):
     pid.enableContinuousInput(0, 100.0)
-    pid.setOutputRange(-1, 1)
+    pid.setIntegratorRange(-1, 1)
     pid.setSetpoint(50.0)
     pid.setPID(Kp=1.0, Ki=0.25, Kd=0.75)
 
@@ -127,7 +127,7 @@ def test_pidcontroller_calculate_rate2(pid):
 def test_pidcontroller_calculate_rate4(pid, source, p, output1, output2):
     # P is aggregated error coeff for kRate..
     pid.enableContinuousInput(0, 100.0)
-    pid.setOutputRange(-1, 1)
+    pid.setIntegratorRange(-1, 1)
     pid.setSetpoint(50.0)
     pid.setPID(Kp=p, Ki=0.0, Kd=0.0)
 
@@ -142,7 +142,7 @@ def test_pidcontroller_calculate_rate4(pid, source, p, output1, output2):
 def test_pidcontroller_calculate_rate5(pid):
     # D is proportional error coeff for kRate
     pid.enableContinuousInput(0, 100.0)
-    pid.setOutputRange(-1, 1)
+    pid.setIntegratorRange(-1, 1)
     pid.setSetpoint(50.0)
     pid.setPID(Kp=0.0, Ki=0.0, Kd=0.75)
 
@@ -170,7 +170,7 @@ def test_pidcontroller_calculate_rate7(
 ):
     pid = PIDController(0.1, 0, 0.075)
     pid.enableContinuousInput(-180.0, 180.0)
-    pid.setOutputRange(-1, 1)
+    pid.setIntegratorRange(-1, 1)
     pid.setSetpoint(setpoint)
 
     out = pid.calculate(input)
@@ -188,7 +188,7 @@ def test_pidcontroller_calculate_displacement1(p, source1, source2, output1, out
     pid = PIDController(p, 0, 0)
     # P is proportional error coeff for kDisplacement
     pid.enableContinuousInput(0, 100.0)
-    pid.setOutputRange(-1, 1)
+    pid.setIntegratorRange(-1, 1)
     pid.setSetpoint(50.0)
 
     out = pid.calculate(source1)
@@ -219,7 +219,7 @@ def test_pidcontroller_calculate_displacement2(
 
     # I is aggregated error coeff for kDisplacement
     pid.enableContinuousInput(0, 100.0)
-    pid.setOutputRange(-1, 1)
+    pid.setIntegratorRange(-1, 1)
     pid.setSetpoint(50.0)
 
     out = pid.calculate(source1)
@@ -250,7 +250,7 @@ def test_pidcontroller_calculate_displacement3(
 
     # D is change in error coeff for kDisplacement
     pid.enableContinuousInput(0, 100.0)
-    pid.setOutputRange(-1, 1)
+    pid.setIntegratorRange(-1, 1)
     pid.setSetpoint(50.0)
 
     out = pid.calculate(source1)
@@ -282,7 +282,9 @@ def test_pidcontroller_setPID(pid, p, i, d):
         (2.0, 1.0, 1.0, 2.0),
     ],
 )
-def test_pidcontroller_enableContinuousInput1(pid, setpoint, lower, upper, new_setpoint):
+def test_pidcontroller_enableContinuousInput1(
+    pid, setpoint, lower, upper, new_setpoint
+):
     pid.setSetpoint(setpoint)
     pid.enableContinuousInput(lower, upper)
 
@@ -300,17 +302,17 @@ def test_pidcontroller_enableContinuousInput2(pid):
 """
 
 
-def test_pidcontroller_setOutputRange1(pid):
-    pid.setOutputRange(1.0, 2.0)
+def test_pidcontroller_setIntegratorRange1(pid):
+    pid.setIntegratorRange(1.0, 2.0)
 
-    assert pid.minimum_output == 1.0
-    assert pid.maximum_output == 2.0
+    assert pid._minimum_integral == 1.0
+    assert pid._maximum_integral == 2.0
 
 
 """
-def test_pidcontroller_setOutputRange2(pid):
+def test_pidcontroller_setIntegratorRange2(pid):
     with pytest.raises(ValueError) as exinfo:
-        pid.setOutputRange(2.0, 1.0)
+        pid.setIntegratorRange(2.0, 1.0)
 
     assert exinfo.value.args[0] == "Lower bound is greater than upper bound"
 """

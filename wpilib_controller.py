@@ -27,8 +27,8 @@ class PIDController(wpilib.SendableBase):
     #: The period (in seconds) of the loop that calls the controller
     period: float
 
-    maximum_output: float = 1
-    minimum_output: float = -1
+    _maximum_integral: float = 1
+    _minimum_integral: float = -1
     #: Maximum input - limit setpoint to this
     _maximum_input: float = 0
     #: Minimum input - limit setpoint to this
@@ -144,14 +144,19 @@ class PIDController(wpilib.SendableBase):
         """Disables continuous input."""
         self.continuous = False
 
-    def setOutputRange(self, minimum_output: float, maximum_output: float) -> None:
-        """Sets the minimum and maximum values to write.
+    def setIntegratorRange(
+        self, minimum_integral: float, maximum_integral: float
+    ) -> None:
+        """Sets the minimum and maximum values for the integrator.
 
-        :param minimum_output: the minimum value to write to the output
-        :param maximum_output: the maximum value to write to the output
+        When the cap is reached, the integrator value is added to the controller
+        output rather than the integrator value times the integral gain.
+
+        :param minimum_integral: The minimum value of the integrator.
+        :param maximum_integral: The maximum value of the integrator.
         """
-        self.minimum_output = minimum_output
-        self.maximum_output = maximum_output
+        self._minimum_integral = minimum_integral
+        self._maximum_integral = maximum_integral
 
     def setTolerance(
         self, position_tolerance: float, velocity_tolerance: float = math.inf
@@ -184,8 +189,6 @@ class PIDController(wpilib.SendableBase):
             self.setSetpoint(setpoint)
 
         Ki = self.Ki
-        minimum_output = self.minimum_output
-        maximum_output = self.maximum_output
 
         prev_error = self.prev_error = self._position_error
         error = self._position_error = self.getContinuousError(
@@ -198,14 +201,12 @@ class PIDController(wpilib.SendableBase):
 
         if Ki:
             total_error = self.total_error = self._clamp(
-                total_error + error * period, minimum_output / Ki, maximum_output / Ki
+                total_error + error * period,
+                self._minimum_integral / Ki,
+                self._maximum_integral / Ki,
             )
 
-        return self._clamp(
-            self.Kp * error + Ki * total_error + self.Kd * vel_error,
-            minimum_output,
-            maximum_output,
-        )
+        return self.Kp * error + Ki * total_error + self.Kd * vel_error
 
     def reset(self) -> None:
         """Reset the previous error, the integral term, and disable the controller."""

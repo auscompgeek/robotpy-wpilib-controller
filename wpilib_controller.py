@@ -33,15 +33,18 @@ class PIDController(wpilib.SendableBase):
     _maximum_input: float = 0
     #: Minimum input - limit setpoint to this
     _minimum_input: float = 0
-    #: input range - difference between maximum and minimum
+    #: Input range - difference between maximum and minimum
     _input_range: float = 0
     #: Do the endpoints wrap around? eg. Absolute encoder
     continuous: bool = False
 
     #: The error at the time of the most recent call to calculate()
-    curr_error: float = 0
+    _position_error: float = 0
+    _velocity_error: float = 0
+
     #: The error at the time of the second-most-recent call to calculate() (used to compute velocity)
     prev_error: float = math.inf
+
     #: The sum of the errors for use in the integral calc
     total_error: float = 0
 
@@ -52,11 +55,10 @@ class PIDController(wpilib.SendableBase):
     _tolerance_type: Tolerance = Tolerance.Absolute
 
     #: The percentage or absolute error that is considered at setpoint.
-    _tolerance: float = 0.05
-    _delta_tolerance: float = math.inf
+    _position_tolerance: float = 0.05
+    _velocity_tolerance: float = math.inf
 
     setpoint: float = 0
-    output: float = 0
 
     def __init__(
         self, Kp: float, Ki: float, Kd: float, *, period: float = 0.02
@@ -108,8 +110,8 @@ class PIDController(wpilib.SendableBase):
 
     def atSetpoint(
         self,
-        tolerance: Optional[float] = None,
-        delta_tolerance: float = math.inf,
+        position_tolerance: Optional[float] = None,
+        velocity_tolerance: float = math.inf,
         tolerance_type: Tolerance = Tolerance.Absolute,
     ) -> bool:
         """
@@ -124,33 +126,22 @@ class PIDController(wpilib.SendableBase):
         :param delta_tolerance: The maximum allowable change in error, if tolerance is specified.
         :param tolerance_type: The type of tolerances specified.
         """
-        if tolerance is None:
-            tolerance = self._tolerance
-            delta_tolerance = self._delta_tolerance
+        if position_tolerance is None:
+            position_tolerance = self._position_tolerance
+            velocity_tolerance = self._velocity_tolerance
             tolerance_type = self._tolerance_type
 
-        error = self.getError()
-
-        delta_error = (error - self.prev_error) / self.period
         if tolerance_type is self.Tolerance.Percent:
             input_range = self._input_range
             return (
-                abs(error) < tolerance / 100 * input_range
-                and abs(delta_error) < delta_tolerance / 100 * input_range
+                abs(self._position_error) < position_tolerance / 100 * input_range
+                and abs(self._velocity_error) < velocity_tolerance / 100 * input_range
             )
         else:
-            return abs(error) < tolerance and abs(delta_error) < delta_tolerance
-
-    def setContinuous(self, continuous: bool = True) -> None:
-        """Set the PID controller to consider the input to be continuous.
-
-        Rather than using the max and min input range as constraints, it
-        considers them to be the same point and automatically calculates
-        the shortest route to the setpoint.
-
-        :param continuous: True turns on continuous, False turns off continuous
-        """
-        self.continuous = continuous
+            return (
+                abs(self._position_error) < position_tolerance
+                and abs(self._velocity_error) < velocity_tolerance
+            )
 
     def setInputRange(self, minimum_input: float, maximum_input: float) -> None:
         """Sets the maximum and minimum values expected from the input.
@@ -166,6 +157,23 @@ class PIDController(wpilib.SendableBase):
         if maximum_input > minimum_input:
             self.setpoint = self._clamp(self.setpoint, minimum_input, maximum_input)
 
+    def enableContinuousInput(self, minimum_input: float, maximum_input: float) -> None:
+        """Enable continuous input.
+
+        Rather than using the max and min input range as constraints, it
+        considers them to be the same point and automatically calculates
+        the shortest route to the setpoint.
+
+        :param minimum_input: The minimum value expected from the input.
+        :param maximum_input: The maximum value expected from the input.
+        """
+        self.continuous = True
+        self.setInputRange(minimum_input, maximum_input)
+
+    def disableContinuousInput(self) -> None:
+        """Disables continuous input."""
+        self.continuous = False
+
     def setOutputRange(self, minimum_output: float, maximum_output: float) -> None:
         """Sets the minimum and maximum values to write.
 
@@ -176,38 +184,38 @@ class PIDController(wpilib.SendableBase):
         self.maximum_output = maximum_output
 
     def setAbsoluteTolerance(
-        self, tolerance: float, delta_tolerance: float = math.inf
+        self, position_tolerance: float, velocity_tolerance: float = math.inf
     ) -> None:
         """
         Set the absolute error which is considered tolerable for use with atSetpoint().
 
-        :param tolerance: Absolute error which is tolerable.
-        :param delta_tolerance: Change in absolute error per second which is tolerable.
+        :param position_tolerance: Position error which is tolerable.
+        :param velocity_tolerance: Velocity error which is tolerable.
         """
         self._tolerance_type = self.Tolerance.Absolute
-        self._tolerance = tolerance
-        self._delta_tolerance = delta_tolerance
+        self._position_tolerance = position_tolerance
+        self._velocity_tolerance = velocity_tolerance
 
     def setPercentTolerance(
-        self, tolerance: float, delta_tolerance: float = math.inf
+        self, position_tolerance: float, velocity_tolerance: float = math.inf
     ) -> None:
         """
         Set the percent error which is considered tolerable for use with atSetpoint().
 
-        :param tolerance: Percent error which is tolerable.
-        :param delta_tolerance: Change in percent error per second which is tolerable.
+        :param position_tolerance: Position error which is tolerable.
+        :param velocity_tolerance: Velocity error which is tolerable.
         """
         self._tolerance_type = self.Tolerance.Percent
-        self._tolerance = tolerance
-        self._delta_tolerance = delta_tolerance
+        self._position_tolerance = position_tolerance
+        self._velocity_tolerance = velocity_tolerance
 
-    def getError(self) -> float:
+    def getPositionError(self) -> float:
         """Returns the difference between the setpoint and the measurement."""
-        return self.getContinuousError(self.curr_error)
+        return self.getContinuousError(self._position_error)
 
-    def getDeltaError(self) -> float:
-        """Returns the change in error per second."""
-        return (self.getError() - self.prev_error) / self.period
+    def getVelocityError(self) -> float:
+        """Returns the velocity error."""
+        return self._velocity_error
 
     def calculate(self, measurement: float, setpoint: Optional[float] = None) -> float:
         """
@@ -223,8 +231,11 @@ class PIDController(wpilib.SendableBase):
         minimum_output = self.minimum_output
         maximum_output = self.maximum_output
 
-        prev_error = self.prev_error = self.curr_error
-        error = self.curr_error = self.getContinuousError(self.setpoint - measurement)
+        prev_error = self.prev_error = self._position_error
+        error = self._position_error = self.getContinuousError(
+            self.setpoint - measurement
+        )
+        vel_error = self._velocity_error = (error - prev_error) / self.period
         total_error = self.total_error
 
         period = self.period
@@ -234,21 +245,16 @@ class PIDController(wpilib.SendableBase):
                 total_error + error * period, minimum_output / Ki, maximum_output / Ki
             )
 
-        output = self.output = self._clamp(
-            self.Kp * error
-            + Ki * total_error
-            + self.Kd * (error - prev_error) / period,
+        return self._clamp(
+            self.Kp * error + Ki * total_error + self.Kd * vel_error,
             minimum_output,
             maximum_output,
         )
-
-        return output
 
     def reset(self) -> None:
         """Reset the previous error, the integral term, and disable the controller."""
         self.prev_error = 0
         self.total_error = 0
-        self.output = 0
 
     def initSendable(self, builder) -> None:
         builder.setSmartDashboardType("PIDController")

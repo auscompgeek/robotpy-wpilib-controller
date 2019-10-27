@@ -44,7 +44,6 @@ def test_pidcontroller_init_args1():
 
 
 def test_pidcontroller_init_args0():
-    source = lambda: 77.0
     pid = PIDController(period=5.0, Ki=2.0, Kp=1.0, Kd=3.0)
 
     assert pid.Kp == pytest.approx(1.0, 0.01)
@@ -110,7 +109,7 @@ def test_pidcontroller_calculate_rate2(pid):
 
     pid.calculate(0)
 
-    assert pid.getError() == pytest.approx(50.0)
+    assert pid.getPositionError() == pytest.approx(50.0)
     # assert pid.total_error == pytest.approx(0.5)
 
 
@@ -159,28 +158,24 @@ def test_pidcontroller_calculate_rate5(pid):
 
 
 @pytest.mark.parametrize(
-    "continuous, input, setpoint, expected_error, expected_output",
+    "input, setpoint, expected_error, expected_output",
     [
-        (False, 180.5, 179.9, -0.6, -0.105),
-        (False, 360.5, 179.9, -180.6, -1.0),
-        (False, 0.5, 179.9, 179.4, 1.0),
-        (True, 180.5, 179.9, -0.6, -0.105),
-        (True, 360.5, 179.9, 179.4, 1.0),
-        (True, 0.5, 179.9, 179.4, 1.0),
+        (180.5, 179.9, -0.6, -0.105),
+        (360.5, 179.9, 179.4, 1.0),
+        (0.5, 179.9, 179.4, 1.0),
     ],
 )
 def test_pidcontroller_calculate_rate7(
-    continuous, input, setpoint, expected_error, expected_output
+    input, setpoint, expected_error, expected_output
 ):
     pid = PIDController(0.1, 0, 0.075)
-    pid.setInputRange(-180.0, 180.0)
-    pid.setContinuous(continuous)
+    pid.enableContinuousInput(-180.0, 180.0)
     pid.setOutputRange(-1, 1)
     pid.setSetpoint(setpoint)
 
     out = pid.calculate(input)
 
-    assert pid.getError() == pytest.approx(expected_error, 0.01)
+    assert pid.getPositionError() == pytest.approx(expected_error, 0.01)
     # assert out == pytest.approx(expected_output, 0.01)
     assert out != 0
 
@@ -393,32 +388,25 @@ def test_pidcontroller_initSendable_safe(pid, sendablebuilder):
 
 
 @pytest.mark.parametrize(
-    "error, input_range, expected, continuous",
+    "error, input_range, expected",
     [
         # fmt: off
         # the % operator has different semantics in java and python,
         # so it is possible the behavior of getContinuousError can/will differ.
         # be sure expected values are obtained/validated from the java 
         # implementation
-        ( 1.80, 2.00, -0.20, True),
-        (-1.80, 2.00,  0.20, True),
-        ( 0.80, 2.00,  0.80, True),
-        (-0.80, 2.00, -0.80, True),
-        ( 1.80, 2.00,  1.80, False),
-        (-1.80, 2.00, -1.80, False),
-        ( 0.80, 2.00,  0.80, False),
-        (-0.80, 2.00, -0.80, False),
+        ( 1.80, 2.00, -0.20),
+        (-1.80, 2.00,  0.20),
+        ( 0.80, 2.00,  0.80),
+        (-0.80, 2.00, -0.80),
         # fmt: on
     ],
 )
-def test_pidcontroller_getContinuousError(
-    pid, error, input_range, expected, continuous
-):
-    pid.setInputRange(0, input_range)
-    pid.setContinuous(continuous)
+def test_pidcontroller_getContinuousError(pid, error, input_range, expected):
+    pid.enableContinuousInput(0, input_range)
     result = pid.getContinuousError(error)
     assert pid._input_range == input_range
-    assert pid.continuous == continuous
+    assert pid.continuous
     assert result == pytest.approx(expected, 0.01)
 
 

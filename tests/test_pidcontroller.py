@@ -392,16 +392,14 @@ def test_pidcontroller_initSendable_safe(pid, sendablebuilder):
 @pytest.mark.parametrize(
     "error, input_range, expected",
     [
-        # fmt: off
         # the % operator has different semantics in java and python,
         # so it is possible the behavior of getContinuousError can/will differ.
-        # be sure expected values are obtained/validated from the java 
+        # be sure expected values are obtained/validated from the java
         # implementation
-        ( 1.80, 2.00, -0.20),
-        (-1.80, 2.00,  0.20),
-        ( 0.80, 2.00,  0.80),
+        (+1.80, 2.00, -0.20),
+        (-1.80, 2.00, +0.20),
+        (+0.80, 2.00, +0.80),
         (-0.80, 2.00, -0.80),
-        # fmt: on
     ],
 )
 def test_pidcontroller_getContinuousError(pid, error, input_range, expected):

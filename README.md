@@ -42,17 +42,16 @@ robotpy-installer install-pip wpilib-controller  # connected to your robot
 ```python
 from wpilib_controller import PIDController
 
-# assume gyro is a gyro object created prior
-controller = PIDController(1, 0, 0, measurement_source=gyro.getAngle)
-controller.setInputRange(0, 360)
-controller.setContinuous()
+controller = PIDController(1, 0, 0)
+# setInputRange and setContinuous are now a single method
+controller.enableContinuousInput(0, 360)
 
-# setSetpoint is now called setReference
-controller.setReference(180)
+controller.setSetpoint(180)
 
 # elsewhere...
 
-output = controller.update()
+# assume gyro is a gyro object created prior
+output = controller.calculate(gyro.getAngle())
 # do something with the output, for example:
 motor.set(output)
 ```
@@ -60,6 +59,5 @@ motor.set(output)
 ## Major differences
 
 - The PID gains are no longer time dependent.
-- This does not distinguish between displacement and rate “PID source types”. Instead this PIDController takes a function as its measurement source.
-- The feedforward is calculated by a function passed into the PIDController.
-- This provides a simple way of running a PID controller synchronously in your robot code (as opposed to having it run in a thread). Simply call the `update()` method which will give you the controller output.
+- This PIDController expects a measurement as a parameter to `calculate()`.
+- This PIDController runs synchronously in your robot code (as opposed to having it run in a thread). You must call `calculate()` and use its return value.

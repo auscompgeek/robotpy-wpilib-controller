@@ -406,7 +406,7 @@ def test_pidcontroller_getContinuousError(pid, error, input_range, expected):
     pid.enableContinuousInput(0, input_range)
     result = pid.getContinuousError(error)
     assert pid._input_range == input_range
-    assert pid.continuous
+    assert pid._continuous
     assert result == pytest.approx(expected, 0.01)
 
 

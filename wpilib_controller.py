@@ -1,6 +1,6 @@
 """A backport of the upcoming (in 2020) WPILib PIDController."""
 
-__version__ = "0.7"
+__version__ = "0.7.1"
 
 import math
 
@@ -35,7 +35,7 @@ class PIDController(wpilib.SendableBase):
     #: Input range - difference between maximum and minimum
     _input_range: float = 0
     #: Do the endpoints wrap around? eg. Absolute encoder
-    continuous: bool = False
+    _continuous: bool = False
 
     #: The error at the time of the most recent call to calculate()
     _position_error: float = 0
@@ -53,9 +53,7 @@ class PIDController(wpilib.SendableBase):
 
     setpoint: float = 0
 
-    def __init__(
-        self, Kp: float, Ki: float, Kd: float, *, period: float = 0.02
-    ) -> None:
+    def __init__(self, Kp: float, Ki: float, Kd: float, *, period: float = 0.02):
         """Allocate a PID object with the given constants for Kp, Ki, and Kd.
 
         :param Kp: The proportional coefficient.
@@ -136,12 +134,12 @@ class PIDController(wpilib.SendableBase):
         :param minimum_input: The minimum value expected from the input.
         :param maximum_input: The maximum value expected from the input.
         """
-        self.continuous = True
+        self._continuous = True
         self._setInputRange(minimum_input, maximum_input)
 
     def disableContinuousInput(self) -> None:
         """Disables continuous input."""
-        self.continuous = False
+        self._continuous = False
 
     def setIntegratorRange(
         self, minimum_integral: float, maximum_integral: float
@@ -193,10 +191,9 @@ class PIDController(wpilib.SendableBase):
         error = self._position_error = self.getContinuousError(
             self.setpoint - measurement
         )
-        vel_error = self._velocity_error = (error - prev_error) / self.period
-        total_error = self.total_error
-
         period = self.period
+        vel_error = self._velocity_error = (error - prev_error) / period
+        total_error = self.total_error
 
         if Ki:
             total_error = self.total_error = self._clamp(
@@ -229,7 +226,7 @@ class PIDController(wpilib.SendableBase):
         :return: Error for continuous inputs.
         """
         input_range = self._input_range
-        if self.continuous and input_range > 0:
+        if self._continuous and input_range > 0:
             error %= input_range
             if error > input_range / 2:
                 return error - input_range
